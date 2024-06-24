@@ -10,21 +10,20 @@ global:
     installPlanApproval: Automatic
 
   imageregistry:
-    account: PLAINTEXT
+    account: css-qe
     hostname: quay.io
     type: quay
 
   git:
     hostname: github.com
-    account: PLAINTEXT
-    #username: PLAINTEXT
-    email: SOMEWHERE@EXAMPLE.COM
+    account: mlabonte-rh
+    email: mlabonte@redhat.com
     dev_revision: main
 
   s3:
     bucket:
-      name: BUCKETNAME
-      region: AWSREGION
+      name: qe-ie-bucket
+      region: us-west-1
       message:
         aggregation:
           count: 50
