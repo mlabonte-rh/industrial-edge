@@ -3,6 +3,7 @@ import os
 import subprocess
 
 import pytest
+import yaml
 from ocp_resources.namespace import Namespace
 from ocp_resources.pod import Pod
 from ocp_resources.route import Route
@@ -74,9 +75,14 @@ def test_validate_hub_site_reachable(kube_config, openshift_dyn_client):
     else:
         logger.info(f"HUB api url : {hub_api_url}")
 
-    bearer_token = get_long_live_bearer_token(dyn_client=openshift_dyn_client)
+    bearer_token = get_long_live_bearer_token(
+        dyn_client=openshift_dyn_client,
+        namespace="openshift-gitops",
+        sub_string="argocd-dex-server-token",
+    )
+
     if not bearer_token:
-        assert False, "Bearer token is missing for hub site"
+        assert False, "Bearer token is missing for argocd-dex-server"
 
     hub_api_response = get_site_response(
         site_url=hub_api_url, bearer_token=bearer_token
@@ -269,13 +275,17 @@ def get_log_output(project, pod, container):
 @pytest.mark.validate_acm_self_registration_managed_clusters
 def test_validate_acm_self_registration_managed_clusters(openshift_dyn_client):
     logger.info("Check ACM self registration for edge site")
-    site_name = (
-        os.environ["EDGE_CLUSTER_PREFIX"]
-        + "-"
-        + os.environ["INFRA_PROVIDER"]
-        + "-"
-        + os.environ["MPTS_TEST_RUN_ID"]
-    )
+    kubefile = os.getenv("KUBECONFIG_EDGE")
+    kubefile_exp = os.path.expandvars(kubefile)
+    with open(kubefile_exp) as stream:
+        try:
+            out = yaml.safe_load(stream)
+            site_name = out["clusters"][0]["name"]
+        except yaml.YAMLError:
+            err_msg = "Failed to load kubeconfig file"
+            logger.error(f"FAIL: {err_msg}")
+            assert False, err_msg
+
     clusters = ManagedCluster.get(dyn_client=openshift_dyn_client, name=site_name)
     cluster = next(clusters)
     is_managed_cluster_joined, managed_cluster_status = cluster.self_registered
@@ -313,11 +323,11 @@ def test_validate_argocd_reachable_hub_site(openshift_dyn_client):
     bearer_token = get_long_live_bearer_token(
         dyn_client=openshift_dyn_client,
         namespace=namespace,
-        sub_string="openshift-gitops-argocd-server-token",
+        sub_string="argocd-dex-server-token",
     )
     if not bearer_token:
         err_msg = (
-            "Bearer token is missing for argocd-server in openshift-gitops" " namespace"
+            "Bearer token is missing for argocd-dex-server"
         )
         logger.error(f"FAIL: {err_msg}")
         assert False, err_msg

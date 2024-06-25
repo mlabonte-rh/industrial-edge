@@ -3,7 +3,10 @@ import os
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
-LOG_DIR = os.path.join(os.environ["WORKSPACE"], ".teflo/.results/test_execution_logs")
+if os.getenv("EXTERNAL_TEST") == "true":
+    LOG_DIR = os.path.join(os.environ["WORKSPACE"], "test_execution_logs")
+else:
+    LOG_DIR = os.path.join(os.environ["WORKSPACE"], ".teflo/.results/test_execution_logs")
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
 
